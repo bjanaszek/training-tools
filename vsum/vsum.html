@@ -1,0 +1,168 @@
+<html>
+    <head>
+        <title>Volume Bouldering Tracker</title>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <!-- Latest compiled and minified CSS -->
+        <link rel="stylesheet" href="css/bootstrap.min.css" >
+        <!-- Optional theme -->
+        <link rel="stylesheet" href="css/bootstrap-theme.min.css">
+
+    </head>
+    <body>
+        <div class="container">
+            <div>
+                <h1>Volume Bouldering Tracker</h1>
+                <p class="lead">Track your volume bouldering session.</p>
+                <form id="f">
+                    <fieldset class="form-group">
+                        <label for="vgrade">V Grade to Add</label>
+                        <input id="vgrade" class="form-control" type="number" min="1" max="16" />
+                    </fieldset>
+                    <button id="add" class="btn btn-primary">Add</button>
+                    <hr />
+                    <fieldset class="form-group">
+                        <label for="sessionLength">Session Length</label>
+                        <input type="number" id="sessionLength" min="1" max="60" value="45" class="form-control" />
+                        <label for="vsum">Current V Sum</label>
+                        <input type="text" readonly="true" id="vsum" class="form-control" />
+                        <label for="vavg">Current V Average</label>
+                        <input type="text" readonly="true" id="vavg" class="form-control" />
+                        <label for="list">Problem Total</label>
+                        <input type="text" readonly="true" id="total" class="form-control" />
+                    </fieldset>
+                    <button id="save" class="btn btn-primary">Save Session</button>
+                    <button id="clear" class="btn btn-primary">Clear</button>
+                </form>
+            </div>
+
+            <div>
+                <h2>Session History</h2>
+                <fieldset class="form-group">
+                    <table id="log" class="table">
+                        <tr>
+                            <th>Date</th>
+                            <th>V Sum</th>
+                            <th>V Average</th>
+                            <th>Session Length</th>
+                            <th>Total Problems</th>
+                        </tr>
+                    </table>
+                    <button id="clearSessions" class="btn btn-danger">Clear Session History</button>
+                </fieldset>
+            </div>
+        </div>
+        <script src="js/jquery-1.12.3.min.js"></script>
+        <!-- Latest compiled and minified JavaScript -->
+        <script src="js/bootstrap.min.js" ></script>
+
+        <script type="text/javascript">
+            let vArray = [];
+            const logKey = 'log';
+
+            /* Button events */
+            $('#add').click((e) => {
+                let sum = 0;
+                let $input = $('#vgrade');
+
+                e.preventDefault();
+
+                if ($input.val() === '') {
+                    return;
+                }
+
+                vArray.push(parseInt($input.val(), 10));
+
+                sum = getSum();
+
+                $('#vsum').val(sum);
+                $input.val('');
+                $('#vavg').val(getAvg(sum));
+                $('#total').val(vArray.length);
+            });
+
+            $('#clear').click((e) => {
+                $('#vgrade').val('');
+                $('#vsum').val('');
+                $('#vavg').val('');
+                $('#total').val('');
+                $('#sessionLength').val(45);
+
+                vArray = [];
+
+                e.preventDefault();
+            });
+
+            $('#save').click((e) => {
+                let workout = {
+                    date: new Date(),
+                    sum: $('#vsum').val(),
+                    avg: $('#vavg').val(),
+                    sessionLength: $('#sessionLength').val(),
+                    total: $('#total').val()
+                };
+
+                saveToStorage(workout);
+                displayLog(readFromStorage());
+
+                $('#clear').click();
+            });
+
+            $('#clearSessions').click((e) => {
+                localStorage.removeItem(logKey);
+                clearLog();
+                e.preventDefault();
+            });
+
+            $('#f').submit((e) => { return false; });
+            /* End events */
+
+            const getAvg = (sum) => {
+                return sum / vArray.length;
+            };
+
+            const getSum = () => {
+                return vArray.reduce((a, b) => { return a + b; }, 0);
+            };
+
+            const saveToStorage = (workout) => {
+                let log = JSON.parse(window.localStorage.getItem(logKey));
+
+                if (log) {
+                    log.push(workout);
+                } else {
+                    log = [workout];
+                }
+
+                window.localStorage.setItem(logKey, JSON.stringify(log));
+            }
+
+            const readFromStorage = () => {
+                return JSON.parse(window.localStorage.getItem(logKey));
+            }
+
+            const displayLog = (logData) => {
+                if (!logData) {
+                    return;
+                }
+
+                logData.forEach((item) => {
+                    const newRow = '<tr><td>' + formatDate(new Date(item.date)) + '</td><td>' + item.sum + '</td><td>' + item.avg + '</td><td>' + item.sessionLength + '</td><td>' + item.total + '</td></tr>';
+                    $('#log tr:last').after(newRow);
+                });
+            }
+
+            const formatDate = (dt) => {
+                return dt.getDate() + '-' + (dt.getMonth() + 1) + '-' + dt.getFullYear();
+            }
+
+            const clearLog = () => {
+                $("#log").find("tr:gt(0)").remove();
+            };
+
+            displayLog(readFromStorage());
+        </script>
+    </body>
+</html>
