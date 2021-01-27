@@ -3,7 +3,7 @@
         <title>Volume Bouldering Tracker</title>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
 
         <!-- Latest compiled and minified CSS -->
         <link rel="stylesheet" href="css/bootstrap.min.css" >
@@ -30,6 +30,8 @@
                         <input type="text" readonly="true" id="vsum" class="form-control" />
                         <label for="vavg">Current V Average</label>
                         <input type="text" readonly="true" id="vavg" class="form-control" />
+                        <label for="density">Session Density</label>
+                        <input id="density" class="form-control" readonly="true" type="text" />
                         <label for="list">Problem Total</label>
                         <input type="text" readonly="true" id="total" class="form-control" />
                     </fieldset>
@@ -47,6 +49,7 @@
                             <th>V Sum</th>
                             <th>V Average</th>
                             <th>Session Length</th>
+                            <th>Session Density</th>
                             <th>Total Problems</th>
                         </tr>
                     </table>
@@ -64,7 +67,8 @@
 
             /* Button events */
             $('#add').click((e) => {
-                let sum = 0;
+                let sum = 0,
+                    length = $('#sessionLength').val();
                 let $input = $('#vgrade');
 
                 e.preventDefault();
@@ -81,6 +85,7 @@
                 $input.val('');
                 $('#vavg').val(getAvg(sum));
                 $('#total').val(vArray.length);
+                $('#density').val(calculateDensity(sum, length));
             });
 
             $('#clear').click((e) => {
@@ -89,6 +94,7 @@
                 $('#vavg').val('');
                 $('#total').val('');
                 $('#sessionLength').val(45);
+                $('#density').val('');
 
                 vArray = [];
 
@@ -96,15 +102,20 @@
             });
 
             $('#save').click((e) => {
+                const sum = $('#vsum').val(),
+                    sessionLength = $('#sessionLength').val();
+
                 let workout = {
                     date: new Date(),
-                    sum: $('#vsum').val(),
+                    sum,
                     avg: $('#vavg').val(),
-                    sessionLength: $('#sessionLength').val(),
+                    sessionLength,
+                    density: calculateDensity(sum, sessionLength),
                     total: $('#total').val()
                 };
 
                 saveToStorage(workout);
+                clearLog();
                 displayLog(readFromStorage());
 
                 $('#clear').click();
@@ -125,6 +136,10 @@
 
             const getSum = () => {
                 return vArray.reduce((a, b) => { return a + b; }, 0);
+            };
+
+            const calculateDensity = (sum, length) => {
+                return Math.round(((sum / length) + Number.EPSILON) * 100) / 100;
             };
 
             const saveToStorage = (workout) => {
@@ -149,7 +164,7 @@
                 }
 
                 logData.forEach((item) => {
-                    const newRow = '<tr><td>' + formatDate(new Date(item.date)) + '</td><td>' + item.sum + '</td><td>' + item.avg + '</td><td>' + item.sessionLength + '</td><td>' + item.total + '</td></tr>';
+                    const newRow = '<tr><td>' + formatDate(new Date(item.date)) + '</td><td>' + item.sum + '</td><td>' + item.avg + '</td><td>' + item.sessionLength + '</td><td>' + item.density + '</td><td>' + item.total + '</td></tr>';
                     $('#log tr:last').after(newRow);
                 });
             }
